@@ -1,0 +1,6 @@
+lib/
+bin/
+build/
+!build/CMakeLists.txt
+
+.DS_Store
