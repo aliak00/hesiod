@@ -1,6 +1,5 @@
 #include <iostream>
 #include "hesiod/lib.hpp"
-
 namespace hesiod {
 
 void lib() {
