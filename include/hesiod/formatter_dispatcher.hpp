@@ -8,18 +8,20 @@ namespace hesiod {
 template <class...>
 using void_t = void;
 
-template <class F, class B, class = void>
+
 struct formatter_dispatcher {
-    static void line(B &) {}
-};
+    template <class F, class B, class = void>
+    struct line {
+        static void call(B &) {}
+    };
 
-template <class F, class B>
-struct formatter_dispatcher<F, B, void_t<decltype(F::line())>> {
-    static void line(B &buffer) {
-        buffer << F::line();
-    }
+    template <class F, class B>
+    struct line<F, B, void_t<decltype(F::line())>> {
+        static void call(B &buffer) {
+            buffer << F::line();
+        }
+    };
 };
-
 
 }
 

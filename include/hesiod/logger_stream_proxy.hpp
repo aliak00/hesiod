@@ -25,7 +25,7 @@ public:
 
     ~logger_stream_proxy() {
         if (pstream_) {
-            formatter_dispatcher<FormatterT, BufferT>::line(buffer_);
+            formatter_dispatcher::line<FormatterT, BufferT>::call(buffer_);
             *pstream_ << buffer_.str();
         }
     }
