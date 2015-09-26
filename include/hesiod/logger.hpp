@@ -8,6 +8,7 @@
 
 #include "hesiod/logger_stream_proxy.hpp"
 #include "hesiod/standard_formatter.hpp"
+#include "hesiod/formatter_dispatcher.hpp"
 
 namespace hesiod {
 
@@ -29,6 +30,14 @@ public:
     void write(const str_t &str, Args... args) {
         buffer_t buffer;
         expand_impl(buffer, 0, str, std::forward<Args>(args)...);
+        stream_ << buffer.str();
+    }
+
+    template <class... Args>
+    void writeln(const str_t &str, Args... args) {
+        buffer_t buffer;
+        expand_impl(buffer, 0, str, std::forward<Args>(args)...);
+        formatter_dispatcher::line<FormatterT, buffer_t>::call(buffer);
         stream_ << buffer.str();
     }
 
