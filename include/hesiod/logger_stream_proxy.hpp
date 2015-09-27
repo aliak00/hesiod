@@ -4,7 +4,6 @@
 #include <sstream>
 #include <functional>
 
-
 #include "hesiod/formatter_dispatcher.hpp"
 #include "hesiod/manipulator.hpp"
 #include "hesiod/utils.hpp"
@@ -43,6 +42,8 @@ public:
         return *this;
     }
 
+private:
+
     template <class T, class = void>
     struct forward_value {
         static void call(buffer_t &buffer, const T &value) {
@@ -60,7 +61,6 @@ public:
         }
     };
 
-private:
     stream_t *pstream_;
     buffer_t buffer_;
 };

@@ -8,8 +8,8 @@ namespace hesiod {
 template <class CharT>
 class standard_formatter {
 public:
-    static const CharT * line() {
-        return static_cast<const CharT*>("\n");
+    static auto line() {
+        return std::basic_string<CharT>("\n");
     }
 };
 
