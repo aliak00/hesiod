@@ -24,20 +24,18 @@ public:
         forward_value<T>::call(buffer_, std::forward<T>(value));
     }
 
-    logger_stream_proxy(logger_stream_proxy &&rval)
-        : pstream_(rval.pstream_) 
-    {
-        rval.pstream_ = nullptr;
-    }
+    logger_stream_proxy(const logger_stream_proxy &other)
+        : pstream_(other.pstream_)
+    {}
 
     ~logger_stream_proxy() {
-        if (pstream_) {
-            *pstream_ << buffer_.str();
-        }
+        *pstream_ << buffer_.str();
     }
 
     template <class T>
     logger_stream_proxy &operator<<(T&& value) {
+        // either streams value in to buffer, or if value is a buffer
+        // manipulator, calls the manipulator with buffer as the argument
         forward_value<T>::call(buffer_, std::forward<T>(value));
         return *this;
     }

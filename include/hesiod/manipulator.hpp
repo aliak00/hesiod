@@ -6,6 +6,7 @@
 
 namespace hesiod {
 
+// standard logger buffer manipulators
 
 template <class LoggerT>
 struct endl_m {

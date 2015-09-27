@@ -16,13 +16,13 @@ template <class CharT, class FormatterT = standard_formatter<CharT>>
 class logger {
 public:
 
+    static const CharT format_specifier = static_cast<CharT>('%');
+
     using stream_t = std::basic_ostream<CharT>;
     using str_t = std::basic_string<CharT>;
     using buffer_t = std::basic_stringstream<CharT>;
     using formatter_t = FormatterT;
     using self_t = logger<CharT, FormatterT>;
-
-    static const CharT format_specifier = static_cast<CharT>('%');
 
     logger(stream_t &stream)
         : stream_(stream)
@@ -39,12 +39,14 @@ public:
     void writeln(const str_t &str, Args... args) {
         buffer_t buffer;
         expand_impl(buffer, 0, str, std::forward<Args>(args)...);
+        // selectively choose to call formatter::line if it exists or not
         formatter_dispatcher::line<self_t>::call(buffer);
         stream_ << buffer.str();
     }
 
     template <class T>
     auto operator<<(T &&value) {
+        // let proxy know of first value it needs to process
         return logger_stream_proxy<self_t>(&stream_, std::forward<T>(value));
     }
 
@@ -52,6 +54,7 @@ private:
 
     std::basic_ostream<CharT> &stream_;
 
+    // no specifiers or no more specifiers left
     buffer_t& expand_impl(buffer_t &buffer, std::size_t start_index, const str_t &str) const {
         auto found_index = find_format_specifier(str, start_index);
         if (found_index == std::string::npos) {
@@ -78,6 +81,7 @@ private:
         if (found_index == std::string::npos) {
             return std::string::npos;
         }
+        // counts if previous char is not an escape
         if (found_index == 0 || str[found_index - 1] != static_cast<CharT>('\\')) {
             return found_index;
         }

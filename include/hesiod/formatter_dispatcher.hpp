@@ -5,6 +5,8 @@
 
 namespace hesiod {
 
+// checks if formatter has implemented the required functions and
+// then calls them, else does nothing
 struct formatter_dispatcher {
     template <class LoggerT, class = void>
     struct line {
