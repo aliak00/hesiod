@@ -19,6 +19,8 @@ public:
     using stream_t = std::basic_ostream<CharT>;
     using str_t = std::basic_string<CharT>;
     using buffer_t = std::basic_stringstream<CharT>;
+    using formatter_t = FormatterT;
+    using self_t = logger<CharT, FormatterT>;
 
     static const CharT format_specifier = static_cast<CharT>('%');
 
@@ -37,13 +39,13 @@ public:
     void writeln(const str_t &str, Args... args) {
         buffer_t buffer;
         expand_impl(buffer, 0, str, std::forward<Args>(args)...);
-        formatter_dispatcher::line<FormatterT, buffer_t>::call(buffer);
+        formatter_dispatcher::line<self_t>::call(buffer);
         stream_ << buffer.str();
     }
 
     template <class T>
     auto operator<<(T &&value) {
-        return logger_stream_proxy<stream_t, buffer_t, FormatterT>(&stream_, std::forward<T>(value));
+        return logger_stream_proxy<self_t>(&stream_, std::forward<T>(value));
     }
 
 private:

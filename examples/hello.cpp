@@ -1,6 +1,7 @@
 #include <iostream>
 #include "hesiod/lib.hpp"
 #include "hesiod/logger.hpp"
+#include "hesiod/manipulator.hpp"
 
 namespace log {
 
@@ -34,8 +35,11 @@ public:
     }
 };
 
-static hesiod::logger<char> info(std::cout);
-static hesiod::logger<char> error(std::cout);
+using simple_logger_t = hesiod::logger<char>;
+static simple_logger_t info(std::cout);
+static simple_logger_t error(std::cout);
+
+static auto endl = hesiod::endl_m<simple_logger_t>();
 
 }
 
@@ -45,8 +49,8 @@ int main(int argc, char **argv) {
     log::info.write("This is an % log\n", "info");
     log::error.write("This is an % log\n", "error");
 
-    log::info << "1" << "2" << "3" << 4 << 5.5;
-    log::error << "1" << "2" << "3" << 4 << 5.5;
+    log::info << "1" << "2" << "3" << 4 << 5.5 << log::endl;
+    log::error << "1" << "2" << "3" << 4 << 5.5 << log::endl;
 
     return 0;
 }
