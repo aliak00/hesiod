@@ -3,6 +3,8 @@
 
 #include <sstream>
 #include <functional>
+#include <tuple>
+#include <array>
 
 #include "hesiod/formatter_dispatcher.hpp"
 #include "hesiod/manipulator.hpp"
@@ -13,34 +15,52 @@ namespace hesiod {
 template <class LoggerT>
 class logger_stream_proxy {
 public:
-    using stream_t = typename LoggerT::stream_t;
+    using streams_t = typename LoggerT::streams_t;
     using buffer_t = typename LoggerT::buffer_t;
-    using formatter_t = typename LoggerT::formatter_t;
+    using array_t = std::array<buffer_t, std::tuple_size<streams_t>::value>;
 
     template <class T>
-    logger_stream_proxy(stream_t *pstream, T&& value)
-        : pstream_(pstream)
+    logger_stream_proxy(streams_t *pstreams, T&& value)
+        : pstreams_(pstreams)
     {
-        forward_value<T>::call(buffer_, std::forward<T>(value));
+        write_value(std::forward<T>(value));
     }
 
     logger_stream_proxy(const logger_stream_proxy &other)
-        : pstream_(other.pstream_)
+        : pstreams_(other.pstreams_)
     {}
 
     ~logger_stream_proxy() {
-        *pstream_ << buffer_.str();
+        write_buffers_to_streams();
     }
 
     template <class T>
     logger_stream_proxy &operator<<(T&& value) {
-        // either streams value in to buffer, or if value is a buffer
-        // manipulator, calls the manipulator with buffer as the argument
-        forward_value<T>::call(buffer_, std::forward<T>(value));
+        write_value(std::forward<T>(value));
         return *this;
     }
 
 private:
+
+    template <std::size_t N>
+    void write_buffers_to_streams(size_c<N>) {
+        auto &stream = std::get<N - 1>(*pstreams_);
+        stream << buffers_[N - 1].str();
+        write_buffers_to_streams(size_c<N - 1>());
+    };
+
+    void write_buffers_to_streams(size_c<0>) {}
+
+    void write_buffers_to_streams() {
+        write_buffers_to_streams(size_c<std::tuple_size<streams_t>::value>());
+    }
+
+    template <class T>
+    void write_value(T&& value) {
+        for (auto & buffer: buffers_) {
+            forward_value<T>::call(buffer, std::forward<T>(value));
+        }
+    }
 
     template <class T, class = void>
     struct forward_value {
@@ -59,8 +79,8 @@ private:
         }
     };
 
-    stream_t *pstream_;
-    buffer_t buffer_;
+    streams_t *pstreams_;
+    array_t buffers_;
 };
 
 

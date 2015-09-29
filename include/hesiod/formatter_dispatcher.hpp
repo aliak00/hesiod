@@ -8,7 +8,7 @@ namespace hesiod {
 // checks if formatter has implemented the required functions and
 // then calls them, else does nothing
 struct formatter_dispatcher {
-    template <class LoggerT, class = void>
+    template <class LoggerT, class = void> 
     struct line {
         static void call(typename LoggerT::buffer_t &) {}
     };

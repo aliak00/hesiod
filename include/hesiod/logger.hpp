@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iterator>
 #include <iostream>
+#include <tuple>
 
 #include "hesiod/logger_stream_proxy.hpp"
 #include "hesiod/standard_formatter.hpp"
@@ -12,71 +13,83 @@
 
 namespace hesiod {
 
-template <class CharT, class FormatterT = standard_formatter<CharT>>
+template <class CharT, class... StreamTs>
 class logger {
 public:
 
     static const CharT format_specifier = static_cast<CharT>('%');
 
-    using stream_t = std::basic_ostream<CharT>;
-    using str_t = std::basic_string<CharT>;
     using buffer_t = std::basic_stringstream<CharT>;
-    using formatter_t = FormatterT;
-    using self_t = logger<CharT, FormatterT>;
+    using string_t = std::basic_string<CharT>;
+    using streams_t = std::tuple<StreamTs...>;
+    using self_t = logger<CharT, StreamTs...>;
 
-    logger(stream_t &stream)
-        : stream_(stream)
+    logger(StreamTs&&... streams)
+        : streams_(std::make_tuple(streams...))
     {}
 
     template <class... Args>
-    void write(const str_t &str, Args... args) {
+    void write(const string_t &str, Args... args) {
         buffer_t buffer;
-        expand_impl(buffer, 0, str, std::forward<Args>(args)...);
-        stream_ << buffer.str();
+        expand_args(buffer, 0, str, std::forward<Args>(args)...);
+        write_to_streams(buffer.str());
     }
 
     template <class... Args>
-    void writeln(const str_t &str, Args... args) {
+    void writeln(const string_t &str, Args... args) {
         buffer_t buffer;
-        expand_impl(buffer, 0, str, std::forward<Args>(args)...);
-        // selectively choose to call formatter::line if it exists or not
+        expand_args(buffer, 0, str, std::forward<Args>(args)...);
+        // selectively choose to call formatter::line if t exists or not
         formatter_dispatcher::line<self_t>::call(buffer);
-        stream_ << buffer.str();
+        write_to_streams(buffer.str());
     }
 
     template <class T>
     auto operator<<(T &&value) {
         // let proxy know of first value it needs to process
-        return logger_stream_proxy<self_t>(&stream_, std::forward<T>(value));
+        return logger_stream_proxy<self_t>(&streams_, std::forward<T>(value));
     }
 
 private:
 
-    std::basic_ostream<CharT> &stream_;
+    streams_t streams_;
+
+    template <std::size_t N>
+    void write_to_streams(const string_t &str, size_c<N>) {
+        auto &stream = std::get<N - 1>(streams_);
+        stream << str;
+        write_to_streams(str, size_c<N - 1>());
+    }
+
+    void write_to_streams(const string_t &, size_c<0>) {}
+
+    void write_to_streams(const string_t &str) {
+        write_to_streams(str, size_c<std::tuple_size<streams_t>::value>());
+    }
 
     // no specifiers or no more specifiers left
-    buffer_t& expand_impl(buffer_t &buffer, std::size_t start_index, const str_t &str) const {
+    buffer_t& expand_args(buffer_t &buffer, std::size_t start_index, const string_t &str) const {
         auto found_index = find_format_specifier(str, start_index);
         if (found_index == std::string::npos) {
             std::copy(std::cbegin(str) + start_index, std::cend(str), std::ostream_iterator<CharT>(buffer));
             return buffer;
         }
-        throw std::invalid_argument("Found more specifiers then arguments.");
+        throw std::invalid_argument("Found more specifiers than arguments.");
     }
 
     template <class Arg, class ...Args>
-    buffer_t& expand_impl(buffer_t &buffer, std::size_t start_index, const str_t &str, const Arg &val, const Args&... args) const {
+    buffer_t& expand_args(buffer_t &buffer, std::size_t start_index, const string_t &str, const Arg &val, const Args&... args) const {
         auto found_index = find_format_specifier(str, start_index);
         if (found_index == std::string::npos) {
-            throw std::invalid_argument("Found more arguments then specifiers.");
+            throw std::invalid_argument("Found more arguments than specifiers.");
         }
         auto cit = std::cbegin(str);
         std::copy(cit + start_index, cit + found_index, std::ostream_iterator<CharT>(buffer));
         buffer << val;
-        return expand_impl(buffer, found_index + 1, str, std::forward<Args>(args)...);
+        return expand_args(buffer, found_index + 1, str, std::forward<Args>(args)...);
     }
 
-    auto find_format_specifier(const str_t &str, std::size_t start_index) const {
+    auto find_format_specifier(const string_t &str, std::size_t start_index) const {
         auto found_index = str.find(format_specifier, start_index);
         if (found_index == std::string::npos) {
             return std::string::npos;
@@ -88,6 +101,12 @@ private:
         return find_format_specifier(str, found_index + 1);
     }
 };
+
+template <class CharT, class... StreamTs>
+auto make_logger(StreamTs&&... streams) {
+    return logger<CharT, StreamTs...>(std::forward<StreamTs>(streams)...);
+}
+
 
 }
 
