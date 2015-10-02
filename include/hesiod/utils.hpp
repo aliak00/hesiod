@@ -5,7 +5,7 @@
 
 namespace hesiod {
 
-template <class...>
+template <typename ...>
 using void_t = void;
 
 template <std::size_t N>

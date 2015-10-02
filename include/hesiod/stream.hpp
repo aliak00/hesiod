@@ -13,14 +13,14 @@ public:
 
     using char_t = typename FormatterT::char_t;
     using stream_t = std::basic_ostream<char_t>;
-    using string_t = std::basic_string<char_t>;
     using formatter_t = FormatterT;
 
     stream(stream_t &stream) 
         : stream_(stream)
     {}
 
-    void operator<<(const string_t &str) {
+    template <class T>
+    void operator<<(T &&str) {
         stream_ << str;
     }
 

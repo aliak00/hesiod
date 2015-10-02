@@ -30,7 +30,7 @@ static std::ofstream file("log.html", std::ios::out);
 static auto info = hesiod::make_logger<char>(hesiod::stream<standard_formatter>(std::cout));
 static auto error = hesiod::make_logger<char>(hesiod::stream<standard_formatter>(std::cout), hesiod::stream<html_formatter>(file));
 
-using endl = hesiod::endl_m;
+static auto endl = hesiod::endl;
 
 }
 
@@ -40,6 +40,9 @@ int main(int argc, char **argv) {
 
     log::info.write("Write % log\n", "info");
     log::error.write("Write % log\n", "error");
+
+    log::info.writeln("Write2 % log", "info");
+    log::error.writeln("Write2 % log", "error");
 
     log::info << "Stream " << "info " << "3" << 4 << 5.5 << log::endl;
     log::error << "Stream " << "error " << "3" << 4 << 5.5 << log::endl;

@@ -8,45 +8,43 @@
 #include <tuple>
 
 #include "hesiod/logger_stream_proxy.hpp"
-#include "hesiod/standard_formatter.hpp"
-#include "hesiod/formatter_dispatcher.hpp"
+#include "hesiod/manipulator.hpp"
 
 namespace hesiod {
 
-template <class CharT, class... StreamTs>
+template <typename CharT, typename ...StreamTs>
 class logger {
 public:
 
     static const CharT format_specifier = static_cast<CharT>('%');
 
-    using buffer_t = std::basic_stringstream<CharT>;
-    using string_t = std::basic_string<CharT>;
     using streams_t = std::tuple<StreamTs...>;
     using self_t = logger<CharT, StreamTs...>;
 
-    logger(StreamTs&&... streams)
+    using buffer_t = std::basic_stringstream<CharT>;
+    using string_t = std::basic_string<CharT>;
+
+    logger(StreamTs &&...streams)
         : streams_(std::make_tuple(streams...))
     {}
 
-    template <class... Args>
-    void write(const string_t &str, Args... args) {
+    template <typename ...Args>
+    void write(const string_t &str, Args ...args) {
         buffer_t buffer;
         expand_args(buffer, 0, str, std::forward<Args>(args)...);
         write_to_streams(buffer.str());
     }
 
-    template <class... Args>
+    template <typename ...Args>
     void writeln(const string_t &str, Args... args) {
         buffer_t buffer;
         expand_args(buffer, 0, str, std::forward<Args>(args)...);
-        // selectively choose to call formatter::line if t exists or not
-        formatter_dispatcher::line<self_t>::call(buffer);
         write_to_streams(buffer.str());
+        logger_stream_proxy<self_t>(&streams_, endl);
     }
 
-    template <class T>
+    template <typename T>
     auto operator<<(T &&value) {
-        // let proxy know of first value it needs to process
         return logger_stream_proxy<self_t>(&streams_, std::forward<T>(value));
     }
 
@@ -77,7 +75,7 @@ private:
         throw std::invalid_argument("Found more specifiers than arguments.");
     }
 
-    template <class Arg, class ...Args>
+    template <typename Arg, typename ...Args>
     buffer_t& expand_args(buffer_t &buffer, std::size_t start_index, const string_t &str, const Arg &val, const Args&... args) const {
         auto found_index = find_format_specifier(str, start_index);
         if (found_index == std::string::npos) {
@@ -102,8 +100,8 @@ private:
     }
 };
 
-template <class CharT, class... StreamTs>
-auto make_logger(StreamTs&&... streams) {
+template <typename CharT, typename ...StreamTs>
+auto make_logger(StreamTs &&...streams) {
     return logger<CharT, StreamTs...>(std::forward<StreamTs>(streams)...);
 }
 
