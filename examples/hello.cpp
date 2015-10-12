@@ -26,9 +26,16 @@ public:
     }
 };
 
-static std::ofstream file("log.html", std::ios::out);
 static auto info = hesiod::make_logger<char>(hesiod::stream<standard_formatter>(std::cout));
-static auto error = hesiod::make_logger<char>(hesiod::stream<standard_formatter>(std::cout), hesiod::stream<html_formatter>(file));
+
+static std::ofstream html_file("log.html", std::ios::out);
+static std::ofstream text_file("log.txt", std::ios::out);
+
+static auto error = hesiod::make_logger<char>(
+    hesiod::stream<standard_formatter>(std::cout),
+    hesiod::stream<html_formatter>(html_file),
+    hesiod::stream<standard_formatter>(text_file)
+);
 
 static auto endl = hesiod::endl;
 
